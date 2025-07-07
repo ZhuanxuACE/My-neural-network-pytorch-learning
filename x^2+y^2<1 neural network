@@ -9,11 +9,11 @@ print(torch.sigmoid(a))
 
 n_samples = 500
 data = torch.randn(n_samples,2)
-label = (data[:,0]**2 + data[:,1]**2 < 1).float().unsqueeze(1)
+label = (data[:,0]**2 + data[:,1]**2 < 1).float().unsqueeze(1)#在第二个维度加中括号[]
 
 class simplenn(nn.Module):
     def __init__(self):
-        super(simplenn,self).__init__()
+        super(simplenn,self).__init__()#super().__init__()也行
         self.fc1 = nn.Linear(2, 15)
         self.fc2 = nn.Linear(15, 15)
         self.fc3 = nn.Linear(15, 1)
@@ -30,7 +30,7 @@ criterion = nn.BCELoss()# 二分类交叉熵损失函数
 # 随机梯度下降优化器
 optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 for epoch in range(epochs):
-    outputs = model(data)
+    outputs = model(data)#相当于model.forward(data)
     loss = criterion(outputs, label)# 计算损失
     optimizer.zero_grad()# 清零梯度
     loss.backward()# 反向传播
@@ -39,7 +39,6 @@ for epoch in range(epochs):
         print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
         #查看fc1的第一个权重
         print(f'fc1 weight: {model.fc1.weight[0]}')
-        #为什么会显示两个数？
 
 #查看权重和偏置
 print("fc1 weight:", model.fc1.weight)
