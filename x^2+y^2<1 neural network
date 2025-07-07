@@ -1,0 +1,99 @@
+import matplotlib.pyplot as plt
+import torch 
+import numpy as np
+import torch.nn as nn
+
+# 测试激活函数
+a = torch.linspace(-5,10,16)
+print(torch.sigmoid(a))
+
+n_samples = 500
+data = torch.randn(n_samples,2)
+label = (data[:,0]**2 + data[:,1]**2 < 1).float().unsqueeze(1)
+
+class simplenn(nn.Module):
+    def __init__(self):
+        super(simplenn,self).__init__()
+        self.fc1 = nn.Linear(2, 15)
+        self.fc2 = nn.Linear(15, 15)
+        self.fc3 = nn.Linear(15, 1)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = torch.sigmoid(self.fc3(x))
+        return x
+
+model = simplenn()
+epochs = 5000
+criterion = nn.BCELoss()# 二分类交叉熵损失函数
+# 随机梯度下降优化器
+optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+for epoch in range(epochs):
+    outputs = model(data)
+    loss = criterion(outputs, label)# 计算损失
+    optimizer.zero_grad()# 清零梯度
+    loss.backward()# 反向传播
+    optimizer.step()# 更新参数
+    if (epoch+1) % 20 == 0:
+        print(f'Epoch [{epoch+1}/{epochs}], Loss: {loss.item():.4f}')
+        #查看fc1的第一个权重
+        print(f'fc1 weight: {model.fc1.weight[0]}')
+        #为什么会显示两个数？
+
+#查看权重和偏置
+print("fc1 weight:", model.fc1.weight)
+print("fc1 bias:", model.fc1.bias)
+
+#现在有一个点(0.5, 0.5)，不用model(x),利用矩阵乘法和加法计算它的输出
+x = torch.tensor([[0.5, 0.5]])
+output = torch.relu(torch.matmul(x, model.fc1.weight.t()) + model.fc1.bias)
+output = torch.relu(torch.matmul(output, model.fc2.weight.t()) + model.fc2.bias)
+output = torch.sigmoid(torch.matmul(output, model.fc3.weight.t()) + model.fc3.bias)
+print(f'Output for point (0.5, 0.5): {output.item():.4f}')
+
+#用训练好的模型进行预测
+predicted = model(data)
+predicted_label = (predicted > 0.5).float()
+accuracy = (predicted_label == label).float().mean()
+print(f'Accuracy: {accuracy.item() * 100:.2f}%')
+
+# 创建一组新的点来预测
+data2 = torch.randn(n_samples,2)
+label2 = (data2[:,0]**2 + data2[:,1]**2 < 1).float().unsqueeze(1)
+predicted2 = model(data2)
+predicted_label2 = (predicted2 > 0.5).float()
+accuracy2 = (predicted_label2 == label).float().mean()
+print(f'Accuracy: {accuracy.item() * 100:.2f}%')
+
+t = np.linspace(0, 2*np.pi, 100)
+
+#绘制预测结果和真实标签
+plt.figure(figsize=(15, 5))
+# 绘制真实标签
+plt.subplot(1, 3, 1)
+plt.scatter(data[:,0].numpy(), data[:,1].numpy(), c=label.numpy().squeeze(), cmap='bwr')
+plt.plot(np.sin(t), np.cos(t), color='green', linewidth=3)
+plt.xlabel('X1',fontsize = 25)
+plt.ylabel('X2',fontsize = 25)
+plt.xticks(fontsize=20) # 设置 x 轴刻度字体大小
+plt.yticks(fontsize=20)
+plt.title('True',fontsize = 35)
+# 绘制预测标签
+plt.subplot(1, 3, 2)
+plt.scatter(data[:,0].numpy(), data[:,1].numpy(), c=predicted_label.numpy().squeeze(), cmap='bwr')
+plt.plot(np.sin(t), np.cos(t), color='green', linewidth=3)
+plt.xlabel('X1',fontsize = 25)
+plt.xticks(fontsize=20) # 设置 x 轴刻度字体大小
+plt.yticks(fontsize=20)
+plt.title('Predict',fontsize = 35)
+# 绘制新数据的预测结果
+plt.subplot(1, 3, 3)
+plt.scatter(data2[:,0].numpy(), data2[:,1].numpy(), c=predicted_label2.numpy().squeeze(), cmap='bwr')
+plt.plot(np.sin(t), np.cos(t), color='green', linewidth=3)
+plt.xlabel('X1',fontsize = 25)
+plt.xticks(fontsize=20) # 设置 x 轴刻度字体大小
+plt.yticks(fontsize=20)
+plt.title('New Data Predict',fontsize = 35)
+plt.tight_layout()
+plt.show()
