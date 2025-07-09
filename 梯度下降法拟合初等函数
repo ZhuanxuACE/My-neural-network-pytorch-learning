@@ -1,0 +1,43 @@
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib
+import matplotlib.animation as ani
+import torch.nn as nn
+import torch.optim as optim
+
+# 生成数据
+x = torch.unsqueeze(torch.linspace(-2, 2, 100), 1)
+randm = torch.rand(100,1)*2
+y = (6 + randm)  * torch.sin(2*x + 1)
+print(x)
+print(y)
+class Net(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.A = nn.Parameter(torch.tensor(1.,requires_grad = True))
+        self.k = nn.Parameter(torch.tensor(1.,requires_grad = True))
+        self.phi = nn.Parameter(torch.tensor(1.,requires_grad = True))
+    
+    def forward(self,x):
+        return self.A * torch.sin(self.k*x + self.phi)
+
+model = Net()
+Loss = nn.MSELoss()
+optimizer = optim.SGD(model.parameters(), lr=0.01)
+epochs = 600
+
+for i in range(epochs):
+    output = model.forward(x)
+    loss = Loss(output,y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    print(f'Epoch {i+1}/{epochs}, Loss: {loss.item():4f}')
+
+# 绘制结果
+plt.scatter(x.numpy(), y.numpy(), label='Data', color='blue')
+plt.plot(x.numpy(), model(x).detach().numpy(), label='Fitted Curve', color='red')
+plt.legend()
+plt.title('Polynomial Regression')
+plt.show()
