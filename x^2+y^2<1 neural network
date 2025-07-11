@@ -62,8 +62,8 @@ data2 = torch.randn(n_samples,2)
 label2 = (data2[:,0]**2 + data2[:,1]**2 < 1).float().unsqueeze(1)
 predicted2 = model(data2)
 predicted_label2 = (predicted2 > 0.5).float()
-accuracy2 = (predicted_label2 == label).float().mean()
-print(f'Accuracy: {accuracy.item() * 100:.2f}%')
+accuracy2 = (predicted_label2 == label2).float().mean()
+print(f'Accuracy: {accuracy2.item() * 100:.2f}%')
 
 t = np.linspace(0, 2*np.pi, 100)
 
