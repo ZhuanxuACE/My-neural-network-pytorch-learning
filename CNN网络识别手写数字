@@ -1,0 +1,112 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torchvision.datasets as datasets
+import torchvision.transforms as transforms
+from torch.utils.data import DataLoader
+from torch import optim
+import matplotlib.pyplot as plt
+import time
+
+tranform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5,),(0.5,))])
+
+# 加载MNIST数据集
+train_dataset = datasets.MNIST(root = "./data",train = True, transform = tranform, download = False)
+test_dataset = datasets.MNIST(root = "./data",train = True, transform = tranform, download = False)
+# [0~60000]:一共60000个手写数据，[0,1]:0是图片数据，1是标签，标签到此为止，
+# [0][27][27]一张28×28的图片数据，标签是0~9的数字
+
+train_loader = torch.utils.data.DataLoader(dataset = train_dataset, batch_size = 64, shuffle = True)
+test_loader = torch.utils.data.DataLoader(dataset = test_dataset, batch_size = 64, shuffle = True)
+# train_loader.dataset和train_dataset共用用一个索引
+
+# 显示前50张图片和标签
+# for i in range(5):
+#     for j in range(10):
+#         print(i,"  ",j)
+#         plt.subplot(5,10,i*10+j+1)
+#         plt.imshow(train_loader.dataset[i*10+j][0][0],cmap = 'gray')
+#         plt.title(train_loader.dataset[i*10+j][1])
+#         plt.xticks([])
+#         plt.yticks([])
+# plt.tight_layout()
+# plt.show()
+
+class SimpleCNN(nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 定义两层卷积层通道为1×32×64
+        self.conv1 = nn.Conv2d(1,32,kernel_size = 3, stride = 1, padding = 1)
+        self.conv2 = nn.Conv2d(32,64,kernel_size = 3,stride = 1, padding = 1)
+        # 定义全连接层
+        self.fc1 = nn.Linear(64*7*7,128)
+        self.fc2 = nn.Linear(128,10)
+
+    def forward(self,x):
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x,2)# x是4维（批量、通道、高、宽)参数:kernel_size, stride\
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x,2)
+        x = x.view(-1,64*7*7)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x)
+        return x
+
+model = SimpleCNN()
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(),lr = 0.01, momentum = 0.9)
+epochs = 3
+model.train()
+
+for i in range(epochs):
+    total_loss = 0
+    time1 = time.time()
+    for images, labels in train_loader:
+        # 向前传播
+        outputs = model(images)
+        loss = criterion(outputs, labels)
+        
+        # 反向传播
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+    time2 = time.time()
+    print(f"Epoch:[{i+1}/{epochs}], loss:{total_loss/len(train_loader):.4f}, time:{time2 - time1:.2f}s")
+
+# model.eval()
+correct = 0
+total = 0
+print(1)
+
+with torch.no_grad():
+    for images, labels in test_loader:
+        outputs = model(images)
+        _, predicted = torch.max(outputs,1)# 返回第二个维度的最大值和索引
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+accuracy = 100 * correct/total
+print(f"Test accuracy: {accuracy:.2f}%")
+print(model(test_dataset[0][0]))
+
+for i in range(35):
+
+    outputs = model(test_dataset[i][0])
+    print(outputs)
+    _, predict = torch.max(outputs,1)
+    plt.subplot(5,7,i+1)
+    plt.imshow(test_dataset[i][0][0], cmap='gray')
+    plt.title(f"L:{test_dataset[i][1]}   P:{predict.item()}")
+    plt.xticks([])
+    plt.yticks([])
+
+
+plt.tight_layout()
+plt.show()
